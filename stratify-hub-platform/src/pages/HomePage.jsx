@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './HomePage.css'
 
-const API_BASE = 'http://localhost:3001'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
 export default function HomePage() {
   const [talents, setTalents] = useState([])
