@@ -88,6 +88,19 @@
   gap: 12px;
 }
 
+.newsletter-success {
+  color: #4ade80;
+  font-size: 0.875rem;
+  font-family: Inter, sans-serif;
+}
+
+.newsletter-error {
+  color: #ff6b6b;
+  font-size: 0.8rem;
+  font-family: Inter, sans-serif;
+  margin-top: 6px;
+}
+
 .footer__bottom {
   border-top: 1px solid var(--border);
   padding: 20px 0;

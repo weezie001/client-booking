@@ -14,7 +14,11 @@
       "Bash(echo \"exit: $?\")",
       "Bash(Stop-Process -Id 32296 -Force)",
       "Bash(Select-String \":3001 \")",
-      "Bash(kill -9 32296)"
+      "Bash(kill -9 32296)",
+      "Bash(node --check server.js)",
+      "Bash(npx vite:*)",
+      "Bash(node --check init_db.js)",
+      "Bash(node --check db.js)"
     ]
   }
 }

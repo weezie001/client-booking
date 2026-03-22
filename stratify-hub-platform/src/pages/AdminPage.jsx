@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../api'
 import './AdminPage.css'
 
-const TABS = ['Overview', 'Talents', 'Blog', 'Bookings', 'Users']
+const TABS = ['Overview', 'Talents', 'Blog', 'Bookings', 'Users', 'Newsletter']
 
 const STATUS_COLORS = {
   pending: '#c9a227', confirmed: '#22c55e', completed: '#6366f1', cancelled: '#ef4444',
@@ -141,6 +141,8 @@ export default function AdminPage() {
   const [blog, setBlog]                       = useState([])
   const [bookings, setBookings]               = useState([])
   const [users, setUsers]                     = useState([])
+  const [subscribers, setSubscribers]         = useState([])
+  const [newsletter, setNewsletter]           = useState({ subject: '', content: '' })
   const [loading, setLoading]                 = useState(false)
   const [editingTalent, setEditingTalent]     = useState(null) // null | 'new' | {talent obj}
   const [editingPost, setEditingPost]         = useState(null) // null | 'new' | {post obj}
@@ -166,6 +168,13 @@ export default function AdminPage() {
       } else if (section === 'Users') {
         const u = await apiFetch('/api/admin/users', {}, token)
         setUsers(u)
+      } else if (section === 'Newsletter') {
+        const [s, { posts }] = await Promise.all([
+          apiFetch('/api/admin/newsletter/subscribers', {}, token),
+          apiFetch('/api/blog?limit=50', {}, token),
+        ])
+        setSubscribers(s)
+        setBlog(posts)
       }
     } catch (err) {
       setError(err.message)
@@ -235,6 +244,17 @@ export default function AdminPage() {
     try {
       await apiFetch(`/api/bookings/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }, token)
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b))
+    } catch (err) { setError(err.message) }
+  }
+
+  // ── Newsletter ─────────────────────────────────────────────────────────────
+  const sendNewsletter = async () => {
+    if (!newsletter.subject || !newsletter.content) return
+    if (!confirm(`Send to ${subscribers.filter(s => s.active).length} active subscribers?`)) return
+    try {
+      const r = await apiFetch('/api/admin/newsletter/send', { method: 'POST', body: JSON.stringify(newsletter) }, token)
+      flash(r.message || 'Newsletter sent!')
+      setNewsletter({ subject: '', content: '' })
     } catch (err) { setError(err.message) }
   }
 
@@ -447,6 +467,129 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        {/* ── Newsletter ── */}
+        {tab === 'Newsletter' && !loading && (
+          <div className="animate-fade">
+            <div className="admin-toolbar">
+              <span className="admin-count">
+                {subscribers.filter(s => s.active).length} active · {subscribers.length} total
+              </span>
+            </div>
+
+            {/* Subscriber list */}
+            <div className="admin-table-wrap" style={{ marginBottom: '32px' }}>
+              <table className="admin-table">
+                <thead>
+                  <tr><th>Email</th><th>Name</th><th>Status</th><th>Subscribed</th></tr>
+                </thead>
+                <tbody>
+                  {subscribers.map(s => (
+                    <tr key={s.id}>
+                      <td>{s.email}</td>
+                      <td>{s.name || '—'}</td>
+                      <td>
+                        <span style={{ color: s.active ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                          {s.active ? 'Active' : 'Unsubscribed'}
+                        </span>
+                      </td>
+                      <td>{fmt(s.subscribed_at)}</td>
+                    </tr>
+                  ))}
+                  {subscribers.length === 0 && (
+                    <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No subscribers yet</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Send newsletter form */}
+            <div className="admin-form glass-panel">
+              <h3 style={{ color: 'var(--text-main)', marginBottom: '8px' }}>Send Newsletter</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>
+                Pick a blog post to auto-fill the template, or write custom content.
+              </p>
+
+              {/* Blog post template picker */}
+              <div className="form-group">
+                <label className="form-label">Use Blog Post as Template</label>
+                <select
+                  className="input-field"
+                  defaultValue=""
+                  onChange={e => {
+                    const post = blog.find(p => String(p.id) === e.target.value)
+                    if (!post) return
+                    setNewsletter({
+                      subject: `StratifyHub Insider: ${post.title}`,
+                      content: `
+<h2 style="color:#fff;margin:0 0 12px">${post.title}</h2>
+${post.image_url ? `<img src="${post.image_url}" alt="${post.title}" style="width:100%;border-radius:12px;margin-bottom:20px;object-fit:cover;max-height:280px">` : ''}
+<span style="display:inline-block;background:#c9a22720;color:#c9a227;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;margin-bottom:16px">${post.category}</span>
+<p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px">${post.excerpt}</p>
+<a href="${import.meta.env.VITE_API_BASE?.replace(':3001', ':5173') || 'http://localhost:5173'}/blog/${post.id}" style="display:inline-block;padding:12px 28px;background:#c9a227;color:#000;border-radius:999px;text-decoration:none;font-weight:700">Read Full Article →</a>
+`.trim(),
+                    })
+                  }}
+                >
+                  <option value="">— Select a post —</option>
+                  {blog.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="admin-form__divider" />
+
+              <div className="form-group">
+                <label className="form-label">Subject *</label>
+                <input
+                  className="input-field"
+                  value={newsletter.subject}
+                  onChange={e => setNewsletter(n => ({ ...n, subject: e.target.value }))}
+                  placeholder="Email subject line"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Content (HTML)</label>
+                <textarea
+                  className="input-field"
+                  rows={10}
+                  value={newsletter.content}
+                  onChange={e => setNewsletter(n => ({ ...n, content: e.target.value }))}
+                  placeholder="<p>Hello subscribers...</p>"
+                />
+              </div>
+
+              {/* Preview */}
+              {newsletter.content && (
+                <div className="form-group">
+                  <label className="form-label">Preview</label>
+                  <div
+                    className="newsletter-preview"
+                    dangerouslySetInnerHTML={{ __html: newsletter.content }}
+                  />
+                </div>
+              )}
+
+              <div className="admin-form__actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setNewsletter({ subject: '', content: '' })}
+                  type="button"
+                >
+                  Clear
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={sendNewsletter}
+                  disabled={!newsletter.subject || !newsletter.content}
+                >
+                  Send to {subscribers.filter(s => s.active).length} Subscribers
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </main>
   )
