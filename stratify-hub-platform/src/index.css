@@ -220,3 +220,22 @@ a {
   font-weight: 500;
   display: block;
 }
+
+.auth-alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-size: 0.875rem;
+  font-family: Inter, sans-serif;
+}
+.auth-alert--error   { background: #ff444420; border: 1px solid #ff444460; color: #ff6b6b; }
+.auth-alert--success { background: #22c55e20; border: 1px solid #22c55e60; color: #4ade80; }
+
+select.input-field {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a1a1aa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}

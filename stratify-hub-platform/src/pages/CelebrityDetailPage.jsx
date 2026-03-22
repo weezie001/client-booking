@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import PaymentModal from '../components/PaymentModal'
 import './CelebrityDetailPage.css'
 
-const API_BASE = 'http://localhost:3001'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
 
 const PACKAGES = [
   {
@@ -30,26 +32,30 @@ const PACKAGES = [
 ]
 
 export default function CelebrityDetailPage() {
-  const { id } = useParams()
-  const [selectedPackage, setSelectedPackage] = useState(PACKAGES[1])
-  const [celebrity, setCelebrity] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { id }                          = useParams()
+  const [selectedPackage, setSelected]  = useState(PACKAGES[1])
+  const [celebrity, setCelebrity]       = useState(null)
+  const [loading, setLoading]           = useState(true)
+  const [showPayment, setShowPayment]   = useState(false)
+
+  const { isLoggedIn } = useAuth()
+  const navigate        = useNavigate()
 
   useEffect(() => {
     fetch(`${API_BASE}/api/talents/${id}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('Talent not found'); return r.json() })
       .then(data => setCelebrity(data))
-      .catch(() => setCelebrity({
-        id,
-        name: 'Christopher Larosa',
-        industry: 'Music',
-        location: 'Los Angeles, CA',
-        bio: 'Grammy-nominated artist and cultural icon known for his electrifying performances and philanthropic work.',
-        rating: 4.9,
-        reviews: 312,
-      }))
+      .catch(err => setCelebrity({ error: err.message }))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleBooking = () => {
+    if (!isLoggedIn) {
+      navigate(`/auth?redirect=${encodeURIComponent(`/celebrity/${id}`)}`)
+      return
+    }
+    setShowPayment(true)
+  }
 
   if (loading) return (
     <main className="detail-page">
@@ -59,11 +65,21 @@ export default function CelebrityDetailPage() {
     </main>
   )
 
+  if (celebrity?.error) return (
+    <main className="detail-page">
+      <div className="container detail-page__inner">
+        <Link to="/" className="detail-back">← Back to Talent</Link>
+        <div className="glass-panel" style={{ padding: '40px', marginTop: '24px', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)' }}>Could not load talent: {celebrity.error}</p>
+        </div>
+      </div>
+    </main>
+  )
+
   return (
     <main className="detail-page">
       <div className="bg-glow" style={{ top: 0, right: 0 }} />
       <div className="container detail-page__inner">
-        {/* Back */}
         <Link to="/" className="detail-back">← Back to Talent</Link>
 
         <div className="detail-layout">
@@ -93,14 +109,13 @@ export default function CelebrityDetailPage() {
 
             <p className="detail-bio">{celebrity.bio}</p>
 
-            {/* Packages */}
             <h2 className="detail-section-title">Booking Packages</h2>
             <div className="packages">
               {PACKAGES.map(pkg => (
                 <div
                   key={pkg.id}
                   className={`package-card glass-panel ${selectedPackage.id === pkg.id ? 'package-card--selected' : ''} ${pkg.featured ? 'package-card--featured' : ''}`}
-                  onClick={() => setSelectedPackage(pkg)}
+                  onClick={() => setSelected(pkg)}
                 >
                   {pkg.featured && <div className="package-card__badge">Most Popular</div>}
                   <div className="package-card__header">
@@ -137,10 +152,10 @@ export default function CelebrityDetailPage() {
                 <span className="gradient-text">${selectedPackage.price.toLocaleString()}</span>
               </div>
 
-              <Link to="/auth" className="btn btn-primary booking-card__cta">
-                Confirm Booking
-              </Link>
-              <button className="btn btn-outline booking-card__chat">
+              <button className="btn btn-primary booking-card__cta" onClick={handleBooking}>
+                {isLoggedIn ? 'Confirm Booking' : 'Sign In to Book'}
+              </button>
+              <button className="btn btn-outline booking-card__chat" onClick={() => {}}>
                 Chat with Agent
               </button>
 
@@ -151,6 +166,18 @@ export default function CelebrityDetailPage() {
           </aside>
         </div>
       </div>
+
+      {showPayment && (
+        <PaymentModal
+          celebrity={celebrity}
+          pkg={selectedPackage}
+          onClose={() => setShowPayment(false)}
+          onSuccess={() => {
+            setShowPayment(false)
+            navigate('/dashboard')
+          }}
+        />
+      )}
     </main>
   )
 }

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(sqlite3:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(timeout 8 node server.js)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3001\")",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c \"taskkill /PID 32296 /F\")",
+      "Bash(cmd /c \"taskkill /PID 32296 /F 2>&1\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(Stop-Process -Id 32296 -Force)",
+      "Bash(Select-String \":3001 \")",
+      "Bash(kill -9 32296)"
+    ]
+  }
+}

@@ -13,7 +13,7 @@ export default function HomePage() {
     fetch(`${API_BASE}/api/talents`)
       .then(r => r.json())
       .then(data => setTalents(data))
-      .catch(() => setTalents(FALLBACK_TALENTS))
+      .catch(() => setTalents([]))
       .finally(() => setLoading(false))
   }, [])
 
@@ -116,11 +116,3 @@ function TalentCard({ talent }) {
   )
 }
 
-const FALLBACK_TALENTS = [
-  { id: 1, name: 'Christopher Larosa', industry: 'Music', location: 'Los Angeles', base_rate: 500, featured: true },
-  { id: 2, name: 'Hamdan bin Mohammed', industry: 'Royalty / Public Figure', location: 'Dubai', base_rate: 10000, featured: true },
-  { id: 3, name: 'Aria Sterling', industry: 'Acting', location: 'New York', base_rate: 2500, featured: false },
-  { id: 4, name: 'Marcus Chen', industry: 'Sports', location: 'San Francisco', base_rate: 1500, featured: false },
-  { id: 5, name: 'Sofia Reyes', industry: 'Fashion', location: 'Paris', base_rate: 3000, featured: true },
-  { id: 6, name: 'James Okafor', industry: 'Comedy', location: 'London', base_rate: 800, featured: false },
-]
